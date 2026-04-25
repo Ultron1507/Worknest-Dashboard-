@@ -13,7 +13,9 @@ export default function Login() {
     try {
       const res = await API.post("/auth/login", form);
       localStorage.setItem("token", res.data.token);
-      navigate("/dashboard");
+      localStorage.setItem("userName", res.data.user.name);
+      localStorage.setItem("userEmail", res.data.user.email);
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       alert("Invalid credentials ❌");
     }
@@ -71,6 +73,7 @@ export default function Login() {
             <input
               type="email"
               placeholder="Email"
+              value={form.email}
               className="w-full pl-10 p-3 rounded-lg bg-white/20 border border-white/30 focus:outline-none"
               onChange={(e) =>
                 setForm({ ...form, email: e.target.value })
@@ -84,6 +87,7 @@ export default function Login() {
             <input
               type={show ? "text" : "password"}
               placeholder="Password"
+              value={form.password}
               className="w-full pl-10 pr-10 p-3 rounded-lg bg-white/20 border border-white/30 focus:outline-none"
               onChange={(e) =>
                 setForm({ ...form, password: e.target.value })

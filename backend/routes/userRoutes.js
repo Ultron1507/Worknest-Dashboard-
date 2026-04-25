@@ -7,7 +7,12 @@ const adminOnly = require("../middleware/adminMiddleware");
 router.get("/profile", protect, (req, res) => {
   res.json({
     message: "Access granted ✅",
-    user: req.user,
+    user: {
+      _id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role,
+    },
   });
 });
 

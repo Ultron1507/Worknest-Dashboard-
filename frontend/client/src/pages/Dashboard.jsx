@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
+import Layout from "../components/Layout";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -15,7 +16,9 @@ export default function Dashboard() {
           },
         });
 
+        // 👇 expecting { user: { name, email, role, ... } }
         setUser(res.data.user);
+
       } catch (err) {
         console.error(err);
       }
@@ -25,50 +28,82 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      
-      {/* 🔹 Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard Overview</h1>
-        <p className="text-gray-500">
-          Welcome back {user?.id ? "User 👋" : ""}
-        </p>
+    <div className="space-y-6 w-full">
+
+      {/* 🔥 HEADER */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+
+          <p className="text-gray-500 mt-1">
+            Welcome back,{" "}
+            <span className="font-semibold text-indigo-600">
+              {user?.name || "User"} 👋
+            </span>
+          </p>
+        </div>
+
+        <div className="bg-white px-4 py-2 rounded-lg shadow text-sm">
+          {new Date().toLocaleDateString()}
+        </div>
       </div>
 
-      {/* 🔹 Cards */}
-      <div className="grid grid-cols-4 gap-6">
-        
-        <div className="bg-white p-5 rounded-xl shadow">
+      {/* 🔥 STATS CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <div className="bg-white p-5 rounded-xl shadow hover:shadow-lg transition">
           <h3 className="text-gray-500">Total Projects</h3>
-          <p className="text-2xl font-bold mt-2">24</p>
+          <p className="text-3xl font-bold mt-2">24</p>
         </div>
 
-        <div className="bg-white p-5 rounded-xl shadow">
+        <div className="bg-white p-5 rounded-xl shadow hover:shadow-lg transition">
           <h3 className="text-gray-500">Total Tasks</h3>
-          <p className="text-2xl font-bold mt-2">152</p>
+          <p className="text-3xl font-bold mt-2">152</p>
         </div>
 
-        <div className="bg-white p-5 rounded-xl shadow">
-          <h3 className="text-gray-500">Completed Tasks</h3>
-          <p className="text-2xl font-bold mt-2 text-green-600">98</p>
+        <div className="bg-white p-5 rounded-xl shadow hover:shadow-lg transition">
+          <h3 className="text-gray-500">Completed</h3>
+          <p className="text-3xl font-bold mt-2 text-green-600">98</p>
         </div>
 
-        <div className="bg-white p-5 rounded-xl shadow">
+        <div className="bg-white p-5 rounded-xl shadow hover:shadow-lg transition">
           <h3 className="text-gray-500">Active Users</h3>
-          <p className="text-2xl font-bold mt-2 text-indigo-600">32</p>
+          <p className="text-3xl font-bold mt-2 text-indigo-600">32</p>
         </div>
 
       </div>
 
-      {/* 🔹 Profile Card */}
+      {/* 🔥 PROFILE CARD */}
       <div className="bg-white p-6 rounded-xl shadow">
-        <h2 className="text-lg font-semibold mb-4">Your Info</h2>
+        <h2 className="text-lg font-semibold mb-4">Your Profile</h2>
 
         {user ? (
-          <div className="space-y-2">
-            <p><span className="font-semibold">User ID:</span> {user.id}</p>
-            <p><span className="font-semibold">Role:</span> {user.role}</p>
-            <p><span className="font-semibold">Token Expiry:</span> {new Date(user.exp * 1000).toLocaleString()}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-gray-500">Name</p>
+              <p className="font-semibold">{user.name}</p>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-gray-500">Email</p>
+              <p className="font-semibold">{user.email}</p>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-gray-500">Role</p>
+              <p className="font-semibold">{user.role || "User"}</p>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-gray-500">Token Expiry</p>
+              <p className="font-semibold">
+                {user.exp
+                  ? new Date(user.exp * 1000).toLocaleString()
+                  : "N/A"}
+              </p>
+            </div>
+
           </div>
         ) : (
           <p>Loading...</p>
