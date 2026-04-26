@@ -2,9 +2,17 @@ const express = require("express");
 const router = express.Router();
 const protect = require("../middleware/authMiddleware");
 const adminOnly = require("../middleware/adminMiddleware");
+const {
+  getProfile,
+  updateProfile,
+} = require("../controllers/userController");
 
-// Protected route
-router.get("/profile", protect, (req, res) => {
+// Protected routes
+router.get("/profile", protect, getProfile);
+router.put("/profile", protect, updateProfile);
+
+// Admin route
+router.get("/admin", protect, adminOnly, (req, res) => {
   res.json({
     message: "Access granted ✅",
     user: {
