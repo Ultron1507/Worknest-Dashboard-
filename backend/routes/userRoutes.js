@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const protect = require("../middleware/authMiddleware");
 const adminOnly = require("../middleware/adminMiddleware");
+const upload = require("../config/multer");
 const {
   getProfile,
   updateProfile,
@@ -9,7 +10,7 @@ const {
 
 // Protected routes
 router.get("/profile", protect, getProfile);
-router.put("/profile", protect, updateProfile);
+router.put("/profile", protect, upload.single("profileImage"), updateProfile);
 
 // Admin route
 router.get("/admin", protect, adminOnly, (req, res) => {

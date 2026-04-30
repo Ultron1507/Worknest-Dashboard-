@@ -1,13 +1,18 @@
 const User = require("../models/User");
+const fs = require("fs");
+const path = require("path");
 
 exports.getProfile = async (req, res) => {
   try {
+    const user = await User.findById(req.user._id);
+    
     res.json({
       user: {
-        _id: req.user._id,
-        name: req.user.name,
-        email: req.user.email,
-        role: req.user.role,
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profileImage: user.profileImage,
       },
     });
   } catch (error) {
@@ -26,6 +31,20 @@ exports.updateProfile = async (req, res) => {
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
 
+    // Handle image upload
+    if (req.file) {
+      // Delete old profile image if exists
+      if (user.profileImage) {
+        const oldImagePath = path.join(__dirname, "../uploads", path.basename(user.profileImage));
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
+      }
+      
+      // Store new image path
+      user.profileImage = `/uploads/${req.file.filename}`;
+    }
+
     await user.save();
 
     res.json({
@@ -34,6 +53,7 @@ exports.updateProfile = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        profileImage: user.profileImage,
       },
     });
   } catch (error) {

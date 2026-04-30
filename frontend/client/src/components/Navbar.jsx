@@ -1,9 +1,32 @@
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import API from "../services/api";
 
 export default function Navbar({ user }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [profileUser, setProfileUser] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const res = await API.get("/user/profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setProfileUser(res.data.user);
+      } catch (error) {
+        console.error("Failed to load navbar user", error);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -37,15 +60,22 @@ export default function Navbar({ user }) {
         </div>
 
         {/* USER */}
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-indigo-600 text-white flex items-center justify-center rounded-full text-sm font-bold">
-            {user?.name ? user.name.charAt(0).toUpperCase() : ""}
+        <Link
+          to="/profile"
+          className="flex items-center hover:bg-gray-100 px-2 py-1 rounded-full transition"
+        >
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-indigo-600 flex items-center justify-center text-white text-sm font-bold">
+            {profileUser?.profileImage ? (
+              <img
+                src={`http://localhost:5000${profileUser.profileImage}`}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              profileUser?.name ? profileUser.name.charAt(0).toUpperCase() : user?.name ? user.name.charAt(0).toUpperCase() : ""
+            )}
           </div>
-
-          <span className="text-sm font-medium">
-            {user?.name || ""}
-          </span>
-        </div>
+        </Link>
 
       </div>
     </div>

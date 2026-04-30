@@ -139,17 +139,19 @@ const COLORS = ["#22c55e", "#4f46e5", "#a78bfa"];
 </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow">
+        <div className="bg-white p-6 rounded-xl shadow min-h-[320px]">
           <h2 className="font-semibold mb-4">Weekly Activity</h2>
 
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={weeklyData}>
-              <XAxis dataKey="day" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="tasks" stroke="#4f46e5" strokeWidth={3} />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="w-full h-[250px] min-h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={weeklyData}>
+                <XAxis dataKey="day" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="tasks" stroke="#4f46e5" strokeWidth={3} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
 
@@ -158,8 +160,8 @@ const COLORS = ["#22c55e", "#4f46e5", "#a78bfa"];
         <div className="bg-white p-6 rounded-xl shadow">
           <h2 className="font-semibold mb-4">Projects Status</h2>
 
-          <div className="flex flex-col lg:flex-row items-center gap-8">
-            <div className="relative w-[200px] h-[200px]">
+          <div className="flex flex-col lg:flex-row items-center gap-8 min-w-0">
+            <div className="relative w-[200px] h-[200px] min-w-[200px] min-h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
