@@ -6,7 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import Tasks from "./pages/Tasks";
 import Profile from "./pages/Profile";
-
+import Admin from "./pages/Admin";
 
 import Layout from "./components/Layout";
 
@@ -29,6 +29,18 @@ function App() {
           <Route path="/projects" element={<Projects />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/profile" element={<Profile />} />
+
+          {/* 👑 Admin Route (FIXED) */}
+          <Route
+            path="/admin"
+            element={
+              role === "admin" ? (
+                <Admin />
+              ) : (
+                <Navigate to="/dashboard" />
+              )
+            }
+          />
 
         </Route>
 

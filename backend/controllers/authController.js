@@ -7,6 +7,10 @@ const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
@@ -14,11 +18,7 @@ const registerUser = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-    });
+    const user = await User.create({ name, email, password: hashedPassword });
 
     res.status(201).json({
       message: "User registered successfully",
@@ -30,15 +30,20 @@ const registerUser = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Register error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-// LOGIN
+// LOGIN (Fixed)
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
@@ -66,6 +71,7 @@ const loginUser = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Login error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
