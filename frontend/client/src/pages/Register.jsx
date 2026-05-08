@@ -1,134 +1,116 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { ArrowRight, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import API from "../services/api";
-import girl from "../assets/girl.png";
+import { AuthShell } from "../components/layout/auth-shell";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Input } from "../components/ui/input";
 
 export default function Register() {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
-
-  const [show, setShow] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+
     try {
       const res = await API.post("/auth/register", form);
-      alert(`Welcome ${res.data.user.name}! Registered successfully ✅`);
+      toast.success(`Welcome ${res.data.user.name}`);
       navigate("/");
     } catch {
-      alert("Registration failed ❌");
+      toast.error("Registration failed");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-indigo-500 to-purple-600">
+    <AuthShell
+      eyebrow="Start organized"
+      title="Create a workspace that feels lighter to run."
+      description="Bring projects, tasks, and personal workflow into a single polished operating view."
+    >
+      <Card className="border-border/80 shadow-xl shadow-black/5">
+        <CardHeader className="space-y-2 p-6 pb-2">
+          <CardTitle className="text-2xl">Create your account</CardTitle>
+          <CardDescription>
+            Set up Worknest and start organizing your projects.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <label className="block space-y-2">
+              <span className="text-sm font-medium">Full name</span>
+              <div className="relative">
+                <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Your name"
+                  value={form.name}
+                  className="pl-9"
+                  onChange={(event) => setForm({ ...form, name: event.target.value })}
+                  required
+                />
+              </div>
+            </label>
 
-      {/* LEFT SIDE */}
-      <div className="hidden md:flex w-1/2 text-white p-10 flex-col justify-between bg-gradient-to-br from-indigo-600 to-purple-700">
+            <label className="block space-y-2">
+              <span className="text-sm font-medium">Email</span>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="email"
+                  placeholder="you@company.com"
+                  value={form.email}
+                  className="pl-9"
+                  onChange={(event) => setForm({ ...form, email: event.target.value })}
+                  required
+                />
+              </div>
+            </label>
 
-        {/* TOP */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-wide">Worknest</h1>
-          <p className="text-sm opacity-80 mt-1">
-            Productivity simplified
-          </p>
-        </div>
+            <label className="block space-y-2">
+              <span className="text-sm font-medium">Password</span>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Create a password"
+                  value={form.password}
+                  className="pl-9 pr-10"
+                  onChange={(event) => setForm({ ...form, password: event.target.value })}
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+                  onClick={() => setShowPassword((value) => !value)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+            </label>
 
-        {/* CENTER IMAGE */}
-        <div className="flex justify-center items-center">
-          <img
-            src={girl}
-            alt="Girl"
-            className="w-[600px] drop-shadow-2xl hover:scale-105 transition"
-          />
-        </div>
+            <Button className="w-full" disabled={loading}>
+              {loading ? "Creating account..." : "Create account"}
+              {!loading && <ArrowRight />}
+            </Button>
+          </form>
 
-        {/* BOTTOM TEXT */}
-        <div className="text-center">
-          <p className="text-lg font-medium">
-            Start your journey today
-          </p>
-          <p className="text-sm opacity-80 mt-2 max-w-xs mx-auto">
-            Join Worknest and organize your workflow like a pro.
-          </p>
-        </div>
-
-      </div>
-
-      {/* RIGHT SIDE */}
-      <div className="flex w-full md:w-1/2 items-center justify-center">
-
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white/20 backdrop-blur-lg p-8 rounded-2xl shadow-xl w-full max-w-md text-white border border-white/30"
-        >
-          <h2 className="text-3xl font-bold text-center mb-6">
-            Create Account 🚀
-          </h2>
-
-          {/* NAME */}
-          <div className="relative">
-            <i className="ri-user-line absolute left-3 top-3 text-white/70"></i>
-            <input
-              type="text"
-              placeholder="Name"
-              className="w-full pl-10 p-3 rounded-lg bg-white/20 border border-white/30"
-              onChange={(e) =>
-                setForm({ ...form, name: e.target.value })
-              }
-            />
-          </div>
-
-          {/* EMAIL */}
-          <div className="relative mt-4">
-            <i className="ri-mail-line absolute left-3 top-3 text-white/70"></i>
-            <input
-              type="email"
-              placeholder="Email"
-              className="w-full pl-10 p-3 rounded-lg bg-white/20 border border-white/30"
-              onChange={(e) =>
-                setForm({ ...form, email: e.target.value })
-              }
-            />
-          </div>
-
-          {/* PASSWORD */}
-          <div className="relative mt-4">
-            <i className="ri-lock-line absolute left-3 top-3 text-white/70"></i>
-            <input
-              type={show ? "text" : "password"}
-              placeholder="Password"
-              className="w-full pl-10 pr-10 p-3 rounded-lg bg-white/20 border border-white/30"
-              onChange={(e) =>
-                setForm({ ...form, password: e.target.value })
-              }
-            />
-            <i
-              className={`ri-eye-${show ? "off" : "line"} absolute right-3 top-3 cursor-pointer`}
-              onClick={() => setShow(!show)}
-            ></i>
-          </div>
-
-          <button className="w-full mt-6 bg-white text-indigo-600 py-3 rounded-lg font-semibold hover:bg-gray-200 transition">
-            Register
-          </button>
-
-          <p className="text-sm text-center mt-4">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <span
-              className="underline cursor-pointer"
-              onClick={() => navigate("/")}
-            >
-              Login
-            </span>
+            <Link to="/" className="font-medium text-primary hover:underline">
+              Sign in
+            </Link>
           </p>
-        </form>
-
-      </div>
-    </div>
+        </CardContent>
+      </Card>
+    </AuthShell>
   );
 }

@@ -1,121 +1,105 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import API from "../services/api";
-import girl from "../assets/girl.png";
+import { AuthShell } from "../components/layout/auth-shell";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Input } from "../components/ui/input";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
-  const [show, setShow] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+
     try {
       const res = await API.post("/auth/login", form);
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("userName", res.data.user.name);
       localStorage.setItem("userEmail", res.data.user.email);
       localStorage.setItem("role", res.data.user.role);
+      toast.success("Welcome back");
       navigate("/dashboard", { replace: true });
     } catch {
-      alert("Invalid credentials ❌");
+      toast.error("Invalid email or password");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-indigo-500 to-purple-600">
+    <AuthShell
+      eyebrow="Welcome back"
+      title="Run your work from one calm dashboard."
+      description="Track projects, see momentum, and move through the day without losing the thread."
+    >
+      <Card className="border-border/80 shadow-xl shadow-black/5">
+        <CardHeader className="space-y-2 p-6 pb-2">
+          <CardTitle className="text-2xl">Sign in to Worknest</CardTitle>
+          <CardDescription>
+            Enter your credentials to open your workspace.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <label className="block space-y-2">
+              <span className="text-sm font-medium">Email</span>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="email"
+                  placeholder="you@company.com"
+                  value={form.email}
+                  className="pl-9"
+                  onChange={(event) => setForm({ ...form, email: event.target.value })}
+                  required
+                />
+              </div>
+            </label>
 
-      {/* LEFT SIDE */}
-      <div className="hidden md:flex w-1/2 text-white p-10 flex-col justify-between bg-gradient-to-br from-indigo-600 to-purple-700">
+            <label className="block space-y-2">
+              <span className="text-sm font-medium">Password</span>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={form.password}
+                  className="pl-9 pr-10"
+                  onChange={(event) => setForm({ ...form, password: event.target.value })}
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+                  onClick={() => setShowPassword((value) => !value)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+            </label>
 
-        {/* TOP */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-wide">Worknest</h1>
-          <p className="text-sm opacity-80 mt-1">
-            Productivity simplified
+            <Button className="w-full" disabled={loading}>
+              {loading ? "Signing in..." : "Sign in"}
+              {!loading && <ArrowRight />}
+            </Button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            New to Worknest?{" "}
+            <Link to="/register" className="font-medium text-primary hover:underline">
+              Create an account
+            </Link>
           </p>
-        </div>
-
-        {/* CENTER IMAGE */}
-        <div className="flex justify-center items-center">
-          <img
-            src={girl}
-            alt="Girl"
-            className="w-[600px] drop-shadow-2xl hover:scale-105 transition"
-          />
-        </div>
-
-        {/* BOTTOM TEXT */}
-        <div className="text-center">
-          <p className="text-lg font-medium">
-            Manage your work smarter
-          </p>
-          <p className="text-sm opacity-80 mt-2 max-w-xs mx-auto">
-            Projects, tasks, and collaboration — all in one place.
-          </p>
-        </div>
-
-      </div>
-
-      {/* RIGHT SIDE */}
-      <div className="flex w-full md:w-1/2 items-center justify-center">
-
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white/20 backdrop-blur-lg p-8 rounded-2xl shadow-xl w-full max-w-md text-white border border-white/30"
-        >
-          <h2 className="text-3xl font-bold text-center mb-6">
-            Welcome Back 👋
-          </h2>
-
-          {/* EMAIL */}
-          <div className="relative">
-            <i className="ri-mail-line absolute left-3 top-3 text-white/70"></i>
-            <input
-              type="email"
-              placeholder="Email"
-              value={form.email}
-              className="w-full pl-10 p-3 rounded-lg bg-white/20 border border-white/30 focus:outline-none"
-              onChange={(e) =>
-                setForm({ ...form, email: e.target.value })
-              }
-            />
-          </div>
-
-          {/* PASSWORD */}
-          <div className="relative mt-4">
-            <i className="ri-lock-line absolute left-3 top-3 text-white/70"></i>
-            <input
-              type={show ? "text" : "password"}
-              placeholder="Password"
-              value={form.password}
-              className="w-full pl-10 pr-10 p-3 rounded-lg bg-white/20 border border-white/30 focus:outline-none"
-              onChange={(e) =>
-                setForm({ ...form, password: e.target.value })
-              }
-            />
-            <i
-              className={`ri-eye-${show ? "off" : "line"} absolute right-3 top-3 cursor-pointer`}
-              onClick={() => setShow(!show)}
-            ></i>
-          </div>
-
-          <button className="w-full mt-6 bg-white text-indigo-600 py-3 rounded-lg font-semibold hover:bg-gray-200 transition">
-            Login
-          </button>
-
-          <p className="text-sm text-center mt-4">
-            Don’t have an account?{" "}
-            <span
-              className="underline cursor-pointer"
-              onClick={() => navigate("/register")}
-            >
-              Register
-            </span>
-          </p>
-        </form>
-
-      </div>
-    </div>
+        </CardContent>
+      </Card>
+    </AuthShell>
   );
 }
