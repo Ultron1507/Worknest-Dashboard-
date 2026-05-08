@@ -1,200 +1,178 @@
-import { useEffect, useState } from "react";
-import API from "../services/api";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { Edit3, FolderPlus, MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
+import { Input, Textarea } from "../components/ui/input";
+import { Skeleton } from "../components/ui/skeleton";
+import {
+  createProject,
+  deleteProject,
+  getProjects,
+  queryKeys,
+  updateProject,
+} from "../lib/api/queries";
 
 export default function Projects() {
-  const [projects, setProjects] = useState([]);
   const [form, setForm] = useState({ name: "", description: "" });
   const [editingId, setEditingId] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
 
-  const token = localStorage.getItem("token");
+  const { data: projects = [], isLoading, isError, refetch } = useQuery({
+    queryKey: queryKeys.projects,
+    queryFn: getProjects,
+  });
 
-  // 🔄 FETCH
-  const fetchProjects = async () => {
-    try {
-      setLoading(true);
-      const res = await API.get("/projects", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setProjects(res.data);
-    } catch (err) {
-      toast.error("Failed to load projects");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  // ➕ ADD / ✏️ UPDATE
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      setLoading(true);
-
-      if (editingId) {
-        await API.put(`/projects/${editingId}`, form, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        toast.success("Project updated");
-      } else {
-        await API.post("/projects", form, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        toast.success("Project created");
-      }
-
+  const saveProject = useMutation({
+    mutationFn: () =>
+      editingId ? updateProject({ id: editingId, payload: form }) : createProject(form),
+    onSuccess: () => {
+      toast.success(editingId ? "Project updated" : "Project created");
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects });
       setForm({ name: "", description: "" });
       setEditingId(null);
       setShowModal(false);
-      fetchProjects();
+    },
+    onError: () => toast.error("Something went wrong"),
+  });
 
-    } catch (err) {
-      toast.error("Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ❌ DELETE
-  const handleDelete = async (id) => {
-    try {
-      setLoading(true);
-
-      await API.delete(`/projects/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+  const removeProject = useMutation({
+    mutationFn: deleteProject,
+    onSuccess: () => {
       toast.success("Project deleted");
-      fetchProjects();
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects });
+    },
+    onError: () => toast.error("Delete failed"),
+  });
 
-    } catch (err) {
-      toast.error("Delete failed");
-    } finally {
-      setLoading(false);
-    }
+  const handleEdit = (project) => {
+    setForm({ name: project.name, description: project.description || "" });
+    setEditingId(project._id);
+    setShowModal(true);
   };
 
-  // ✏️ EDIT
-  const handleEdit = (p) => {
-    setForm({ name: p.name, description: p.description });
-    setEditingId(p._id);
-    setShowModal(true);
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingId(null);
+    setForm({ name: "", description: "" });
   };
 
   return (
     <div className="space-y-6">
-
-      {/* 🔥 HEADER */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Projects</h1>
-
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg"
-        >
-          + Add Project
-        </button>
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Projects</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Create, edit, and organize active workstreams.
+          </p>
+        </div>
+        <Button onClick={() => setShowModal(true)}>
+          <Plus />
+          Add Project
+        </Button>
       </div>
 
-      {/* 🔄 LOADING */}
-      {loading && (
-        <div className="text-center text-gray-500">Loading...</div>
+      {isError && (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-3 p-10 text-center">
+            <p className="font-semibold">Could not load projects</p>
+            <p className="text-sm text-muted-foreground">Make sure the backend server is running.</p>
+            <Button onClick={() => refetch()}>Retry</Button>
+          </CardContent>
+        </Card>
       )}
 
-      {/* 📦 PROJECTS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
-        {projects.map((p) => (
-          <div
-            key={p._id}
-            className="bg-white p-5 rounded-xl shadow hover:shadow-lg"
-          >
-            <h2 className="font-bold">{p.name}</h2>
-            <p className="text-gray-500 text-sm mt-2">
-              {p.description}
+      {isLoading ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Skeleton key={index} className="h-40 rounded-xl" />
+          ))}
+        </div>
+      ) : projects.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center gap-3 p-12 text-center">
+            <FolderPlus className="size-8 text-primary" />
+            <h2 className="font-semibold">No projects yet</h2>
+            <p className="max-w-sm text-sm text-muted-foreground">
+              Start with one focused project. You can add tasks and richer project metadata later.
             </p>
-
-            <div className="flex gap-4 mt-4 text-sm">
-              <button
-                onClick={() => handleEdit(p)}
-                className="text-indigo-600"
-              >
-                Edit
-              </button>
-
-              <button
-                onClick={() => handleDelete(p._id)}
-                className="text-red-500"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
-
-      </div>
-
-      {/* 🔥 MODAL */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-
-          <div className="bg-white p-6 rounded-xl w-full max-w-md">
-
-            <h2 className="font-bold mb-4">
-              {editingId ? "Edit Project" : "Add Project"}
-            </h2>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-
-              <input
-                type="text"
-                placeholder="Name"
-                value={form.name}
-                onChange={(e) =>
-                  setForm({ ...form, name: e.target.value })
-                }
-                className="w-full border p-2 rounded"
-              />
-
-              <textarea
-                placeholder="Description"
-                value={form.description}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
-                className="w-full border p-2 rounded"
-              />
-
-              <div className="flex justify-end gap-2">
-
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="border px-3 py-1 rounded"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  disabled={loading}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded disabled:opacity-50"
-                >
-                  {loading ? "Saving..." : "Save"}
-                </button>
-
-              </div>
-
-            </form>
-          </div>
+            <Button onClick={() => setShowModal(true)}>Create project</Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {projects.map((project) => (
+            <Card key={project._id} className="group transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="font-semibold">{project.name}</h2>
+                    <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
+                      {project.description || "No description added."}
+                    </p>
+                  </div>
+                  <MoreHorizontal className="size-4 text-muted-foreground" />
+                </div>
+                <div className="mt-5 flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => handleEdit(project)}>
+                    <Edit3 />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    disabled={removeProject.isPending}
+                    onClick={() => removeProject.mutate(project._id)}
+                  >
+                    <Trash2 />
+                    Delete
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-6">
+              <h2 className="mb-1 text-lg font-semibold">
+                {editingId ? "Edit Project" : "Add Project"}
+              </h2>
+              <p className="mb-5 text-sm text-muted-foreground">
+                Keep names short and descriptions outcome-focused.
+              </p>
+              <form onSubmit={(event) => { event.preventDefault(); saveProject.mutate(); }} className="space-y-4">
+                <Input
+                  type="text"
+                  placeholder="Name"
+                  value={form.name}
+                  onChange={(event) => setForm({ ...form, name: event.target.value })}
+                  required
+                />
+                <Textarea
+                  placeholder="Description"
+                  value={form.description}
+                  onChange={(event) => setForm({ ...form, description: event.target.value })}
+                />
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button type="button" variant="outline" onClick={closeModal}>
+                    Cancel
+                  </Button>
+                  <Button disabled={saveProject.isPending}>
+                    {saveProject.isPending ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

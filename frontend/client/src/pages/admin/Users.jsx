@@ -1,126 +1,84 @@
-import { useEffect, useState } from "react";
-import API from "../../services/api";
-import toast from "react-hot-toast";
+import { useQuery } from "@tanstack/react-query";
+import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
+import { Badge } from "../../components/ui/badge";
+import { Card, CardContent } from "../../components/ui/card";
+import { Skeleton } from "../../components/ui/skeleton";
+import { getAdminUsers, queryKeys } from "../../lib/api/queries";
+import { absoluteUploadUrl, getInitials } from "../../lib/utils";
 
 export default function Users() {
-  const [users, setUsers] = useState([]);
-  const token = localStorage.getItem("token");
-
-  const fetchUsers = async () => {
-    try {
-      const res = await API.get("/admin/users", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setUsers(res.data);
-    } catch (error) {
-      toast.error("Failed to load users");
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: queryKeys.adminUsers,
+    queryFn: getAdminUsers,
+  });
 
   return (
     <div className="space-y-6">
-
-      {/* 🔥 Header */}
       <div>
-        <h1 className="text-2xl font-bold">Users</h1>
-        <p className="text-gray-500">Manage all users</p>
+        <h1 className="text-3xl font-semibold tracking-tight">Users</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {isLoading ? "Loading registered users..." : `${users.length} registered users`}
+        </p>
       </div>
 
-      {/* 🔥 Table */}
-      <div className="bg-white rounded-xl shadow overflow-x-auto">
-
-        <table className="w-full text-sm">
-
-          <thead className="bg-gray-100 text-gray-600">
-            <tr>
-              <th className="p-4 text-left">User</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Joined</th>
-              <th>Last Active</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {users.map((u) => (
-              <tr key={u._id} className="border-t hover:bg-gray-50">
-
-                {/* 🔥 USER */}
-                <td className="p-4 flex items-center gap-3">
-
-                  {/* Avatar */}
-                  <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center overflow-hidden">
-                    {u.avatar ? (
-                      <img
-                        src={u.avatar}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      u.name?.charAt(0)
-                    )}
-                  </div>
-
-                  {/* Name */}
-                  <div>
-                    <p className="font-semibold">{u.name}</p>
-                  </div>
-
-                </td>
-
-                {/* Email */}
-                <td>{u.email}</td>
-
-                {/* Role */}
-                <td>
-                  <span
-                    className={`px-2 py-1 text-xs rounded-full ${
-                      u.role === "admin"
-                        ? "bg-indigo-100 text-indigo-600"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {u.role}
-                  </span>
-                </td>
-
-                {/* Status */}
-                <td>
-                  <span
-                    className={`px-2 py-1 text-xs rounded-full ${
-                      u.status === "active"
-                        ? "bg-green-100 text-green-600"
-                        : "bg-red-100 text-red-600"
-                    }`}
-                  >
-                    {u.status || "active"}
-                  </span>
-                </td>
-
-                {/* Joined */}
-                <td>
-                  {new Date(u.createdAt).toLocaleDateString()}
-                </td>
-
-                {/* Last Active */}
-                <td>
-                  {u.lastActive
-                    ? new Date(u.lastActive).toLocaleString()
-                    : "—"}
-                </td>
-
-              </tr>
-            ))}
-          </tbody>
-
-        </table>
-
-      </div>
-
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="space-y-3 p-5">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Skeleton key={index} className="h-14 rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/60 text-muted-foreground">
+                  <tr>
+                    <th className="p-4 text-left font-medium">User</th>
+                    <th className="p-4 text-left font-medium">Email</th>
+                    <th className="p-4 text-left font-medium">Role</th>
+                    <th className="p-4 text-left font-medium">Status</th>
+                    <th className="p-4 text-left font-medium">Joined</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.length === 0 ? (
+                    <tr>
+                      <td className="p-6 text-center text-muted-foreground" colSpan="5">No registered users found.</td>
+                    </tr>
+                  ) : (
+                    users.map((user) => (
+                      <tr key={user._id} className="border-t transition-colors hover:bg-muted/35">
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarImage src={absoluteUploadUrl(user.avatar || user.profileImage)} alt={user.name || "User"} />
+                              <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{user.name || "Unnamed user"}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-muted-foreground">{user.email || "-"}</td>
+                        <td className="p-4">
+                          <Badge className="capitalize">{user.role || "user"}</Badge>
+                        </td>
+                        <td className="p-4">
+                          <Badge className={user.status === "inactive" ? "bg-destructive/10 text-destructive" : "bg-emerald-500/10 text-emerald-600"}>
+                            {user.status || "active"}
+                          </Badge>
+                        </td>
+                        <td className="p-4 text-muted-foreground">
+                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "-"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

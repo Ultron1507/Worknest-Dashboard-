@@ -19,7 +19,7 @@ export default function Register() {
       const res = await API.post("/auth/register", form);
       alert(`Welcome ${res.data.user.name}! Registered successfully ✅`);
       navigate("/");
-    } catch (err) {
+    } catch {
       alert("Registration failed ❌");
     }
   };
