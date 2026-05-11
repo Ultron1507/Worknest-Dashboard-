@@ -12,7 +12,8 @@ exports.getProfile = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        profileImage: user.profileImage,
+        profileImage: user.profileImage || user.avatar,
+        avatar: user.avatar || user.profileImage,
       },
     });
   } catch (error) {
@@ -43,6 +44,7 @@ exports.updateProfile = async (req, res) => {
       
       // Store new image path
       user.profileImage = `/uploads/${req.file.filename}`;
+      user.avatar = user.profileImage;
     }
 
     await user.save();
@@ -54,6 +56,7 @@ exports.updateProfile = async (req, res) => {
         email: user.email,
         role: user.role,
         profileImage: user.profileImage,
+        avatar: user.avatar,
       },
     });
   } catch (error) {

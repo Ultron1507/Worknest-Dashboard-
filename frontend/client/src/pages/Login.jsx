@@ -3,15 +3,17 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import API from "../services/api";
+import { getApiErrorMessage } from "../lib/api/client";
 import { AuthShell } from "../components/layout/auth-shell";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 
-export default function Login() {
+export default function Login({ onAuthenticated }) {
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (event) => {
@@ -24,12 +26,31 @@ export default function Login() {
       localStorage.setItem("userName", res.data.user.name);
       localStorage.setItem("userEmail", res.data.user.email);
       localStorage.setItem("role", res.data.user.role);
+      onAuthenticated?.();
       toast.success("Welcome back");
       navigate("/dashboard", { replace: true });
-    } catch {
-      toast.error("Invalid email or password");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Invalid email or password"));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDevReset = async () => {
+    if (!form.email || !form.password) {
+      toast.error("Enter email and new password first");
+      return;
+    }
+
+    setResetting(true);
+
+    try {
+      await API.post("/auth/dev-reset-password", form);
+      toast.success("Password reset. Sign in with the same password.");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Password reset failed"));
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -90,6 +111,18 @@ export default function Login() {
               {loading ? "Signing in..." : "Sign in"}
               {!loading && <ArrowRight />}
             </Button>
+
+            {import.meta.env.DEV && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={loading || resetting}
+                onClick={handleDevReset}
+              >
+                {resetting ? "Resetting password..." : "Reset dev password"}
+              </Button>
+            )}
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">

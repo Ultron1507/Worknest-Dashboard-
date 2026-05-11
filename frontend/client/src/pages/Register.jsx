@@ -3,12 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { ArrowRight, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import API from "../services/api";
+import { getApiErrorMessage } from "../lib/api/client";
 import { AuthShell } from "../components/layout/auth-shell";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 
-export default function Register() {
+export default function Register({ onAuthenticated }) {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,10 +21,15 @@ export default function Register() {
 
     try {
       const res = await API.post("/auth/register", form);
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("userName", res.data.user.name);
+      localStorage.setItem("userEmail", res.data.user.email);
+      localStorage.setItem("role", res.data.user.role);
+      onAuthenticated?.();
       toast.success(`Welcome ${res.data.user.name}`);
-      navigate("/");
-    } catch {
-      toast.error("Registration failed");
+      navigate("/dashboard", { replace: true });
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Registration failed"));
     } finally {
       setLoading(false);
     }

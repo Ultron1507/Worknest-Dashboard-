@@ -7,6 +7,8 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       unique: true,
+      lowercase: true,
+      trim: true,
     },
 
     password: String,
@@ -17,6 +19,11 @@ const userSchema = new mongoose.Schema(
     },
 
     avatar: {
+      type: String,
+      default: "",
+    },
+
+    profileImage: {
       type: String,
       default: "",
     },
