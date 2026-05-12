@@ -9,8 +9,6 @@
 
 <br>
 
-![WorkNest Dashboard Preview](Screenshot (227).png)
-
 **WorkNest** is a beautiful and functional project management dashboard that helps users organize tasks, track progress, and visualize project health with interactive charts and real-time analytics.
 
 ---
