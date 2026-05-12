@@ -9,7 +9,8 @@
 
 <br>
 
-![WorkNest Dashboard Preview](./Screenshot%20(227).png)
+![WorkNest Dashboard Preview](<img width="1358" height="674" alt="Screenshot (227)" src="https://github.com/user-attachments/assets/b6c71ee7-d99b-40f4-a211-c2cc29082a22" />
+)
 
 **WorkNest** is a beautiful and functional project management dashboard that helps users organize tasks, track progress, and visualize project health with interactive charts and real-time analytics.
 
@@ -36,12 +37,6 @@ React 18 (Vite) • Tailwind CSS • Shadcn/UI • Zustand • TanStack Query �
 Node.js • Express.js • MongoDB (Mongoose) • JWT Authentication
 
 ---
-
-### 📸 Screenshots
-
-![Dashboard Overview](./Screenshot%20(227).png)
-
-*(Add more screenshots here later)*
 
 ---
 
