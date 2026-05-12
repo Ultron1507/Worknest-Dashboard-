@@ -9,7 +9,7 @@
 
 <br>
 
-![WorkNest Dashboard Preview]("C:\Users\ASUS\OneDrive\Pictures\Screenshots\Screenshot (227).png")
+![WorkNest Dashboard Preview](./Screenshot%20(227).png)
 
 **WorkNest** is a beautiful and functional project management dashboard that helps users organize tasks, track progress, and visualize project health with interactive charts and real-time analytics.
 
