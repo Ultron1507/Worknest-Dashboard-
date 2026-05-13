@@ -1,7 +1,9 @@
-const User = require("../models/User");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+// Tools for security and data
+const User = require("../models/User"); // The User blueprint/model
+const bcrypt = require("bcryptjs");      // For scrambling (hashing) passwords
+const jwt = require("jsonwebtoken");     // For creating "VIP Badges" (Tokens)
 
+// Helper function: Cleans the email input
 function normalizeEmail(email) {
   return typeof email === "string" ? email.trim().toLowerCase() : email;
 }
@@ -27,31 +29,33 @@ async function findUserByEmail(email) {
 }
 
 // REGISTER
+// Function to create a new user (Registration)
 const registerUser = async (req, res) => {
+  // Get data from the frontend form
   const { name, email, password } = req.body;
 
   try {
+    // Basic check: Are all fields filled?
     if (!name || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
+    // Check if a user with this email already lives in our DB
     const normalizedEmail = normalizeEmail(email);
     const userExists = await findUserByEmail(normalizedEmail);
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
     }
 
+    // Scramble the password before saving
     const hashedPassword = await bcrypt.hash(password, 10);
-
+    // Save the user record to the DB
     const user = await User.create({ name, email: normalizedEmail, password: hashedPassword });
 
+    // Return success and a security token (login badge)
     res.status(201).json({
       message: "User registered successfully",
-      token: jwt.sign(
-        { id: user._id, role: user.role },
-        process.env.JWT_SECRET,
-        { expiresIn: "1d" }
-      ),
+      token: jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1d" }),
       user: {
         _id: user._id,
         name: user.name,
@@ -84,10 +88,12 @@ const loginUser = async (req, res) => {
     if (isBcryptHash(user.password)) {
       isMatch = await bcrypt.compare(password, user.password);
     } else {
+      // Security Warning: This should be deprecated in production
       isMatch = password === user.password;
 
       if (isMatch) {
         user.password = await bcrypt.hash(password, 10);
+        // Save handled below with lastActive
       }
     }
 
