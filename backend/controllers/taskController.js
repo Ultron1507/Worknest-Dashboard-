@@ -1,14 +1,60 @@
-const Task = require("../models/Task");
+const mongoose = require("mongoose");
 const Project = require("../models/Project");
+const Task = require("../models/Task");
 
 const allowedStatuses = ["todo", "in-progress", "done"];
 const allowedPriorities = ["low", "medium", "high"];
 
-async function assertOwnedProject(projectId, userId) {
-  if (!projectId) return null;
+async function assertUserProject(projectId, userId) {
+  if (!projectId) {
+    return null;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(projectId)) {
+    const error = new Error("Invalid project");
+    error.statusCode = 400;
+    throw error;
+  }
 
   const project = await Project.findOne({ _id: projectId, userId });
-  return project;
+  if (!project) {
+    const error = new Error("Project not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return project._id;
+}
+
+function normalizeTaskPayload(body) {
+  return {
+    title: body.title?.trim(),
+    description: body.description?.trim() || "",
+    status: body.status || "todo",
+    priority: body.priority || "medium",
+    dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
+    projectId: body.projectId || undefined,
+  };
+}
+
+function validateTaskPayload(payload) {
+  if (!payload.title) {
+    return "Task title is required";
+  }
+
+  if (!allowedStatuses.includes(payload.status)) {
+    return "Invalid task status";
+  }
+
+  if (!allowedPriorities.includes(payload.priority)) {
+    return "Invalid task priority";
+  }
+
+  if (payload.dueDate && Number.isNaN(payload.dueDate.getTime())) {
+    return "Invalid due date";
+  }
+
+  return null;
 }
 
 const getTasks = async (req, res) => {
@@ -24,88 +70,66 @@ const getTasks = async (req, res) => {
 };
 
 const createTask = async (req, res) => {
-  const { title, description, status, priority, dueDate, projectId } = req.body;
-
   try {
-    if (!title?.trim()) {
-      return res.status(400).json({ message: "Task title is required" });
+    const payload = normalizeTaskPayload(req.body);
+    const validationMessage = validateTaskPayload(payload);
+
+    if (validationMessage) {
+      return res.status(400).json({ message: validationMessage });
     }
 
-    if (status && !allowedStatuses.includes(status)) {
-      return res.status(400).json({ message: "Invalid task status" });
-    }
-
-    if (priority && !allowedPriorities.includes(priority)) {
-      return res.status(400).json({ message: "Invalid task priority" });
-    }
-
-    if (projectId) {
-      const project = await assertOwnedProject(projectId, req.user._id);
-      if (!project) {
-        return res.status(404).json({ message: "Project not found" });
-      }
-    }
-
+    const projectId = await assertUserProject(payload.projectId, req.user._id);
     const task = await Task.create({
-      title: title.trim(),
-      description,
-      status,
-      priority,
-      dueDate: dueDate || undefined,
-      projectId: projectId || undefined,
+      ...payload,
+      projectId,
       userId: req.user._id,
     });
 
     const populatedTask = await task.populate("projectId", "name");
-    res.status(201).json({ message: "Task created successfully", task: populatedTask });
+
+    res.status(201).json({
+      message: "Task created successfully",
+      task: populatedTask,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    res.status(error.statusCode || 500).json({ message: error.statusCode ? error.message : "Server error" });
   }
 };
 
 const updateTask = async (req, res) => {
   const { id } = req.params;
-  const { title, description, status, priority, dueDate, projectId } = req.body;
 
   try {
-    const task = await Task.findOne({ _id: id, userId: req.user._id });
+    const task = await Task.findById(id);
 
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    if (!title?.trim()) {
-      return res.status(400).json({ message: "Task title is required" });
+    if (task.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized to update this task" });
     }
 
-    if (status && !allowedStatuses.includes(status)) {
-      return res.status(400).json({ message: "Invalid task status" });
+    const payload = normalizeTaskPayload(req.body);
+    const validationMessage = validateTaskPayload(payload);
+
+    if (validationMessage) {
+      return res.status(400).json({ message: validationMessage });
     }
 
-    if (priority && !allowedPriorities.includes(priority)) {
-      return res.status(400).json({ message: "Invalid task priority" });
-    }
-
-    if (projectId) {
-      const project = await assertOwnedProject(projectId, req.user._id);
-      if (!project) {
-        return res.status(404).json({ message: "Project not found" });
-      }
-    }
-
-    task.title = title.trim();
-    task.description = description;
-    task.status = status;
-    task.priority = priority;
-    task.dueDate = dueDate || undefined;
-    task.projectId = projectId || undefined;
+    task.title = payload.title;
+    task.description = payload.description;
+    task.status = payload.status;
+    task.priority = payload.priority;
+    task.dueDate = payload.dueDate;
+    task.projectId = await assertUserProject(payload.projectId, req.user._id);
 
     await task.save();
-
     const populatedTask = await task.populate("projectId", "name");
+
     res.json({ message: "Task updated successfully", task: populatedTask });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    res.status(error.statusCode || 500).json({ message: error.statusCode ? error.message : "Server error" });
   }
 };
 
@@ -113,12 +137,17 @@ const deleteTask = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const task = await Task.findOneAndDelete({ _id: id, userId: req.user._id });
+    const task = await Task.findById(id);
 
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
     }
 
+    if (task.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized to delete this task" });
+    }
+
+    await Task.findByIdAndDelete(id);
     res.json({ message: "Task deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
