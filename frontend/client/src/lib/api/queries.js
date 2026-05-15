@@ -3,6 +3,7 @@ import { apiClient } from "./client";
 export const queryKeys = {
   profile: ["profile"],
   projects: ["projects"],
+  tasks: ["tasks"],
   adminUsers: ["admin", "users"],
 };
 
@@ -33,6 +34,26 @@ export async function updateProject({ id, payload }) {
 
 export async function deleteProject(id) {
   await apiClient.delete(`/projects/${id}`);
+  return id;
+}
+
+export async function getTasks() {
+  const { data } = await apiClient.get("/tasks");
+  return Array.isArray(data) ? data : [];
+}
+
+export async function createTask(payload) {
+  const { data } = await apiClient.post("/tasks", payload);
+  return data.task;
+}
+
+export async function updateTask({ id, payload }) {
+  const { data } = await apiClient.put(`/tasks/${id}`, payload);
+  return data.task;
+}
+
+export async function deleteTask(id) {
+  await apiClient.delete(`/tasks/${id}`);
   return id;
 }
 
