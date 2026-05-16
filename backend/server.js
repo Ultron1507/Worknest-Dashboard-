@@ -6,6 +6,17 @@ const connectDB = require("./config/db"); // Custom function to connect to Mongo
 
 // Initialize configuration
 dotenv.config(); // Load the .env file
+
+const requiredEnvVars = ["MONGO_URI", "JWT_SECRET"];
+
+if (process.env.NODE_ENV === "production") {
+  const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
+
+  if (missingEnvVars.length) {
+    throw new Error(`Missing required environment variables: ${missingEnvVars.join(", ")}`);
+  }
+}
+
 connectDB();     // Start the database connection
 
 const app = express();
@@ -18,7 +29,7 @@ app.use("/uploads", express.static("uploads")); // Makes the 'uploads' folder pu
 
 // API Routes: Mapping URLs to logic
 app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/admin", require("./routes/adminRoutes"));
+app.use("/api/admin", require("./routes/adminRoutes.js"));
 app.use("/api/user", require("./routes/userRoutes"));
 app.use("/api/projects", require("./routes/projectRoutes"));
 app.use("/api/tasks", require("./routes/taskRoutes"));
@@ -26,6 +37,14 @@ app.use("/api/tasks", require("./routes/taskRoutes"));
 // Health check route (to see if API is alive)
 app.get("/", (req, res) => {
   res.send("API is running...");
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "ok",
+    environment: process.env.NODE_ENV || "development",
+    timestamp: new Date().toISOString(),
+  });
 });
 
 

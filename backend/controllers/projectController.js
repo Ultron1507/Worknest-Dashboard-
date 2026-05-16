@@ -1,4 +1,12 @@
 const Project = require("../models/Project");
+const { cleanString, isValidObjectId } = require("../utils/validation");
+
+function normalizeProjectPayload(body) {
+  return {
+    name: cleanString(body.name, 100),
+    description: cleanString(body.description, 1000),
+  };
+}
 
 // GET ALL PROJECTS FOR USER
 const getProjects = async (req, res) => {
@@ -12,7 +20,7 @@ const getProjects = async (req, res) => {
 
 // CREATE PROJECT
 const createProject = async (req, res) => {
-  const { name, description } = req.body;
+  const { name, description } = normalizeProjectPayload(req.body);
 
   try {
     if (!name) {
@@ -37,9 +45,13 @@ const createProject = async (req, res) => {
 // UPDATE PROJECT
 const updateProject = async (req, res) => {
   const { id } = req.params;
-  const { name, description } = req.body;
+  const { name, description } = normalizeProjectPayload(req.body);
 
   try {
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid project id" });
+    }
+
     const project = await Project.findById(id);
 
     if (!project) {
@@ -70,6 +82,10 @@ const deleteProject = async (req, res) => {
   const { id } = req.params;
 
   try {
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid project id" });
+    }
+
     const project = await Project.findById(id);
 
     if (!project) {

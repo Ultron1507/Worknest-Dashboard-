@@ -8,27 +8,18 @@ const {
   updateProfile,
 } = require("../controllers/userController");
 
-// Protected routes
 router.get("/profile", protect, getProfile);
 router.put("/profile", protect, upload.single("profileImage"), updateProfile);
 
-// Admin route
 router.get("/admin", protect, adminOnly, (req, res) => {
   res.json({
-    message: "Access granted ✅",
+    message: "Access granted",
     user: {
       _id: req.user._id,
       name: req.user.name,
       email: req.user.email,
       role: req.user.role,
     },
-  });
-});
-
-// Admin route
-router.get("/admin", protect, adminOnly, (req, res) => {
-  res.json({
-    message: "Welcome Admin 🚀",
   });
 });
 

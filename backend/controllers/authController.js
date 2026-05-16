@@ -1,12 +1,7 @@
-// Tools for security and data
-const User = require("../models/User"); // The User blueprint/model
-const bcrypt = require("bcryptjs");      // For scrambling (hashing) passwords
-const jwt = require("jsonwebtoken");     // For creating "VIP Badges" (Tokens)
-
-// Helper function: Cleans the email input
-function normalizeEmail(email) {
-  return typeof email === "string" ? email.trim().toLowerCase() : email;
-}
+const User = require("../models/User");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { cleanString, isValidEmail, normalizeEmail } = require("../utils/validation");
 
 function isBcryptHash(value) {
   return typeof value === "string" && /^\$2[aby]\$\d{2}\$.{53}$/.test(value);
@@ -28,40 +23,53 @@ async function findUserByEmail(email) {
   });
 }
 
-// REGISTER
-// Function to create a new user (Registration)
+function signToken(user) {
+  return jwt.sign(
+    { id: user._id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+  );
+}
+
+function publicUser(user) {
+  return {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
+}
+
 const registerUser = async (req, res) => {
-  // Get data from the frontend form
-  const { name, email, password } = req.body;
+  const name = cleanString(req.body.name, 80);
+  const email = normalizeEmail(req.body.email);
+  const password = req.body.password;
 
   try {
-    // Basic check: Are all fields filled?
     if (!name || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check if a user with this email already lives in our DB
-    const normalizedEmail = normalizeEmail(email);
-    const userExists = await findUserByEmail(normalizedEmail);
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: "Enter a valid email address" });
+    }
+
+    if (typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters" });
+    }
+
+    const userExists = await findUserByEmail(email);
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Scramble the password before saving
     const hashedPassword = await bcrypt.hash(password, 10);
-    // Save the user record to the DB
-    const user = await User.create({ name, email: normalizedEmail, password: hashedPassword });
+    const user = await User.create({ name, email, password: hashedPassword });
 
-    // Return success and a security token (login badge)
     res.status(201).json({
       message: "User registered successfully",
-      token: jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1d" }),
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      token: signToken(user),
+      user: publicUser(user),
     });
   } catch (error) {
     console.error("Register error:", error);
@@ -69,13 +77,17 @@ const registerUser = async (req, res) => {
   }
 };
 
-// LOGIN (Fixed)
 const loginUser = async (req, res) => {
-  const { email, password } = req.body;
+  const email = normalizeEmail(req.body.email);
+  const password = req.body.password;
 
   try {
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: "Enter a valid email address" });
     }
 
     const user = await findUserByEmail(email);
@@ -87,13 +99,11 @@ const loginUser = async (req, res) => {
 
     if (isBcryptHash(user.password)) {
       isMatch = await bcrypt.compare(password, user.password);
-    } else {
-      // Security Warning: This should be deprecated in production
+    } else if (process.env.NODE_ENV !== "production") {
       isMatch = password === user.password;
 
       if (isMatch) {
         user.password = await bcrypt.hash(password, 10);
-        // Save handled below with lastActive
       }
     }
 
@@ -104,22 +114,10 @@ const loginUser = async (req, res) => {
     user.lastActive = new Date();
     await user.save();
 
-
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
-
     res.json({
       message: "Login successful",
-      token,
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      token: signToken(user),
+      user: publicUser(user),
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -132,11 +130,20 @@ const resetPasswordForDevelopment = async (req, res) => {
     return res.status(404).json({ message: "Route not found" });
   }
 
-  const { email, password } = req.body;
+  const email = normalizeEmail(req.body.email);
+  const password = req.body.password;
 
   try {
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: "Enter a valid email address" });
+    }
+
+    if (typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters" });
     }
 
     const user = await findUserByEmail(email);
@@ -150,12 +157,7 @@ const resetPasswordForDevelopment = async (req, res) => {
 
     res.json({
       message: "Password reset successfully",
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      user: publicUser(user),
     });
   } catch (error) {
     console.error("Password reset error:", error);

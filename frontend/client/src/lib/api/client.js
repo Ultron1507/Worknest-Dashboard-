@@ -1,5 +1,12 @@
 import axios from "axios";
 
+function clearStoredSession() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  localStorage.removeItem("userName");
+  localStorage.removeItem("userEmail");
+}
+
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
   withCredentials: false,
@@ -21,10 +28,11 @@ apiClient.interceptors.response.use(
     const status = error.response?.status;
 
     if (status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      localStorage.removeItem("userName");
-      localStorage.removeItem("userEmail");
+      clearStoredSession();
+
+      if (window.location.pathname !== "/") {
+        window.location.replace("/");
+      }
     }
 
     return Promise.reject(error);
