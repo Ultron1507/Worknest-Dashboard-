@@ -9,8 +9,21 @@ const allowedRoles = ["user", "admin"];
 
 router.get("/users", authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const users = await User.find().select("-password").sort({ createdAt: -1 });
-    res.json(users);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    // Fetch users and total count in parallel for better performance
+    const [users, totalCount] = await Promise.all([
+      User.find()
+        .select("-password")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      User.countDocuments(),
+    ]);
+
+    res.json({ users, totalCount });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }

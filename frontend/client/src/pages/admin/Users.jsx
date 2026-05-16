@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import { Badge } from "../../components/ui/badge";
@@ -7,17 +8,24 @@ import { getAdminUsers, queryKeys } from "../../lib/api/queries";
 import { absoluteUploadUrl, getInitials } from "../../lib/utils";
 
 export default function Users() {
-  const { data: users = [], isLoading } = useQuery({
-    queryKey: queryKeys.adminUsers,
-    queryFn: getAdminUsers,
+  const [page, setPage] = useState(1);
+  const limit = 20;
+
+  const { data, isLoading } = useQuery({
+    queryKey: [...queryKeys.adminUsers, page],
+    queryFn: () => getAdminUsers({ page, limit }),
+    keepPreviousData: true,
   });
+
+  const users = data?.users || [];
+  const totalUsers = data?.totalCount || 0;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">Users</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {isLoading ? "Loading registered users..." : `${users.length} registered users`}
+          {isLoading ? "Loading registered users..." : `${totalUsers} registered users`}
         </p>
       </div>
 
@@ -79,6 +87,24 @@ export default function Users() {
           )}
         </CardContent>
       </Card>
+
+      {/* Simple Pagination Controls */}
+      <div className="flex justify-end gap-2">
+        <button 
+          disabled={page === 1} 
+          onClick={() => setPage(p => p - 1)}
+          className="px-4 py-2 text-sm border rounded-md disabled:opacity-50"
+        >
+          Previous
+        </button>
+        <button 
+          disabled={users.length < limit}
+          onClick={() => setPage(p => p + 1)}
+          className="px-4 py-2 text-sm border rounded-md disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }

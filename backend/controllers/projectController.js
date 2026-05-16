@@ -11,7 +11,7 @@ function normalizeProjectPayload(body) {
 // GET ALL PROJECTS FOR USER
 const getProjects = async (req, res) => {
   try {
-    const projects = await Project.find({ userId: req.user._id });
+    const projects = await Project.find({ userId: req.user._id }).lean();
     res.json(projects);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
@@ -52,24 +52,19 @@ const updateProject = async (req, res) => {
       return res.status(400).json({ message: "Invalid project id" });
     }
 
-    const project = await Project.findById(id);
-
-    if (!project) {
-      return res.status(404).json({ message: "Project not found" });
-    }
-
-    if (project.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized to update this project" });
-    }
-
     if (!name) {
       return res.status(400).json({ message: "Project name is required" });
     }
 
-    project.name = name;
-    project.description = description;
+    const project = await Project.findOneAndUpdate(
+      { _id: id, userId: req.user._id },
+      { $set: { name, description } },
+      { new: true, runValidators: true }
+    ).lean();
 
-    await project.save();
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
 
     res.json({ message: "Project updated successfully", project });
   } catch (error) {

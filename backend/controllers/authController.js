@@ -18,9 +18,7 @@ async function findUserByEmail(email) {
     return null;
   }
 
-  return User.findOne({
-    email: new RegExp(`^${escapeRegex(normalizedEmail)}$`, "i"),
-  });
+  return User.findOne({ email: normalizedEmail }).lean();
 }
 
 function signToken(user) {
@@ -97,13 +95,15 @@ const loginUser = async (req, res) => {
 
     let isMatch = false;
 
+    const updateFields = { lastActive: new Date() };
+
     if (isBcryptHash(user.password)) {
       isMatch = await bcrypt.compare(password, user.password);
     } else if (process.env.NODE_ENV !== "production") {
       isMatch = password === user.password;
 
       if (isMatch) {
-        user.password = await bcrypt.hash(password, 10);
+        updateFields.password = await bcrypt.hash(password, 10);
       }
     }
 
@@ -111,8 +111,7 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    user.lastActive = new Date();
-    await user.save();
+    await User.updateOne({ _id: user._id }, { $set: updateFields });
 
     res.json({
       message: "Login successful",

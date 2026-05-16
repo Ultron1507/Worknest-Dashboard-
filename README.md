@@ -1,4 +1,3 @@
-```markdown
 <div align="center">
   <h1>WorkNest Dashboard</h1>
   <p><strong>A Modern Full-Stack Project & Task Management Application</strong></p>
@@ -86,8 +85,6 @@ worknest-dashboard/
 │   │   └── lib/
 │   └── public/
 └── README.md
-```
-
 ---
 
 ### ⚡ Quick Start

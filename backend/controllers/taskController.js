@@ -61,7 +61,8 @@ const getTasks = async (req, res) => {
   try {
     const tasks = await Task.find({ userId: req.user._id })
       .populate("projectId", "name")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.json(tasks);
   } catch (error) {

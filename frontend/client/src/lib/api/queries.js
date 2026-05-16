@@ -57,7 +57,10 @@ export async function deleteTask(id) {
   return id;
 }
 
-export async function getAdminUsers() {
-  const { data } = await apiClient.get("/admin/users");
-  return Array.isArray(data) ? data : [];
+export async function getAdminUsers({ page = 1, limit = 20 } = {}) {
+  const { data } = await apiClient.get("/admin/users", {
+    params: { page, limit }
+  });
+  // Expecting backend to return { users: [], totalCount: number }
+  return data;
 }
