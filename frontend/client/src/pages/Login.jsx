@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import API from "../services/api";
 import { getApiErrorMessage } from "../lib/api/client";
-import { AuthShell } from "../components/layout/auth-shell";
+import { AuthShell } from "../components/layout/auth-shell"; // Ensure this matches filename exactly
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";

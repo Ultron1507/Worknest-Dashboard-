@@ -2,10 +2,11 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
+const rateLimit = require("express-rate-limit");
 
 dotenv.config();
 
-const requiredEnvVars = ["MONGO_URI", "JWT_SECRET"];
+const requiredEnvVars = ["MONGO_URI", "JWT_SECRET", "CLIENT_URL"];
 
 if (process.env.NODE_ENV === "production") {
   const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
@@ -19,12 +20,24 @@ connectDB();
 
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));
+// Rate Limiter: Prevents API abuse
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, 
+  message: { message: "Too many requests, please try again later." }
+});
+
+const allowedOrigin = process.env.CLIENT_URL 
+  ? process.env.CLIENT_URL.replace(/\/$/, "") 
+  : "http://localhost:5173";
+
+app.use(cors({ origin: allowedOrigin, credentials: true }));
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
+app.use("/api/", limiter);
 
 app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/admin", require("./routes/adminRoutes.js"));
+app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/user", require("./routes/userRoutes"));
 app.use("/api/projects", require("./routes/projectRoutes"));
 app.use("/api/tasks", require("./routes/taskRoutes"));
@@ -35,7 +48,7 @@ app.get("/", (req, res) => {
 
 app.get("/api/health", (req, res) => {
   res.json({
-    status: "ok",
+    status: "Healthy",
     environment: process.env.NODE_ENV || "development",
     timestamp: new Date().toISOString(),
   });
