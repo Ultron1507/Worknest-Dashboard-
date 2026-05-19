@@ -1,5 +1,5 @@
 import { Monitor, Moon, Sun } from "lucide-react";
-import girl from "../../assets/girl.png";
+import girl from "../../assets/Girl.png";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
