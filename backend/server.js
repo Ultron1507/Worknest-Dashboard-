@@ -29,6 +29,7 @@ const limiter = rateLimit({
 
 const allowedOrigins = [
   "http://localhost:5173",
+  "https://worknest-dashboard.vercel.app",
   "https://worknest-dashboard-git-main-puspita-das-projects.vercel.app",
   process.env.CLIENT_URL,
 ]
