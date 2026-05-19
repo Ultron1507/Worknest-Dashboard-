@@ -150,9 +150,11 @@ const resetPasswordForDevelopment = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    user.password = await bcrypt.hash(password, 10);
-    user.lastActive = new Date();
-    await user.save();
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await User.updateOne(
+      { _id: user._id },
+      { $set: { password: hashedPassword, lastActive: new Date() } }
+    );
 
     res.json({
       message: "Password reset successfully",

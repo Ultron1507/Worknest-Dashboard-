@@ -8,5 +8,6 @@ dist/
 logs/
 *.log
 .codex-backup-before-github-*/
+.codex-main-push/
 backend/uploads/*
 !backend/uploads/.gitkeep
