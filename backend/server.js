@@ -6,7 +6,7 @@ const rateLimit = require("express-rate-limit");
 
 dotenv.config();
 
-const requiredEnvVars = ["MONGO_URI", "JWT_SECRET", "CLIENT_URL"];
+const requiredEnvVars = ["MONGO_URI", "JWT_SECRET"];
 
 if (process.env.NODE_ENV === "production") {
   const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
@@ -27,11 +27,26 @@ const limiter = rateLimit({
   message: { message: "Too many requests, please try again later." }
 });
 
-const allowedOrigin = process.env.CLIENT_URL 
-  ? process.env.CLIENT_URL.replace(/\/$/, "") 
-  : "http://localhost:5173";
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://worknest-dashboard-git-main-puspita-das-projects.vercel.app",
+  process.env.CLIENT_URL,
+]
+  .filter(Boolean)
+  .map((origin) => origin.replace(/\/$/, ""));
 
-app.use(cors({ origin: allowedOrigin, credentials: true }));
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 app.use("/api/", limiter);
