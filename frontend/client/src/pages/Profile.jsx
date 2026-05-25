@@ -1,7 +1,7 @@
 import { createElement, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { Camera, Mail, Shield, User, X } from "lucide-react";
+import { Camera, ImagePlus, Mail, Shield, Trash2, User, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -30,6 +30,8 @@ export default function Profile() {
     },
     onSuccess: () => {
       toast.success("Profile updated");
+      localStorage.setItem("userName", form.name);
+      localStorage.setItem("userEmail", form.email);
       queryClient.invalidateQueries({ queryKey: queryKeys.profile });
       setImageFile(null);
       setImagePreview("");
@@ -42,10 +44,31 @@ export default function Profile() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (!file.type.startsWith("image/")) {
+      toast.error("Choose an image file");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be under 2 MB");
+      return;
+    }
+
     setImageFile(file);
     const reader = new FileReader();
     reader.onloadend = () => setImagePreview(reader.result);
     reader.readAsDataURL(file);
+  };
+
+  const clearSelectedImage = () => {
+    setImageFile(null);
+    setImagePreview("");
+  };
+
+  const cancelEdit = () => {
+    setForm({ name: user?.name || "", email: user?.email || "" });
+    clearSelectedImage();
+    setEditMode(false);
   };
 
   if (isLoading) {
@@ -67,15 +90,15 @@ export default function Profile() {
 
       <Card className="overflow-hidden">
         <div className="h-24 bg-[linear-gradient(120deg,#6366f1,#14b8a6,#f59e0b)]" />
-        <CardContent className="-mt-10 flex flex-col gap-5 p-6 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex items-end gap-4">
+        <CardContent className="-mt-10 flex flex-col gap-5 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <div className="relative">
               <Avatar className="size-24 border-4 border-card">
                 <AvatarImage src={imagePreview || absoluteUploadUrl(user?.profileImage)} alt={user?.name || "User"} />
                 <AvatarFallback className="text-xl">{getInitials(user?.name)}</AvatarFallback>
               </Avatar>
               {editMode && (
-                <label className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/45 text-white opacity-0 transition hover:opacity-100">
+                <label className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/45 text-white opacity-100 transition sm:opacity-0 sm:hover:opacity-100">
                   <Camera className="size-5" />
                   <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                 </label>
@@ -88,10 +111,15 @@ export default function Profile() {
             </div>
           </div>
           <Button
+            className="w-full sm:w-auto"
             variant={editMode ? "outline" : "default"}
             onClick={() => {
-              if (!editMode) setForm({ name: user?.name || "", email: user?.email || "" });
-              setEditMode((value) => !value);
+              if (editMode) {
+                cancelEdit();
+              } else {
+                setForm({ name: user?.name || "", email: user?.email || "" });
+                setEditMode(true);
+              }
             }}
           >
             {editMode ? <X /> : <User />}
@@ -115,7 +143,7 @@ export default function Profile() {
         {editMode && (
           <Card>
             <CardHeader>
-              <CardTitle>Edit Profile</CardTitle>
+              <CardTitle>Account Settings</CardTitle>
             </CardHeader>
             <CardContent>
               <form
@@ -125,12 +153,61 @@ export default function Profile() {
                 }}
                 className="space-y-4"
               >
-                <Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Full name" />
-                <Input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="Email" />
-                <Input type="file" accept="image/*" onChange={handleImageChange} />
-                <Button className="w-full" disabled={updateMutation.isPending}>
-                  {updateMutation.isPending ? "Updating..." : "Update Profile"}
-                </Button>
+                <label className="space-y-1 text-sm font-medium">
+                  <span>Full name</span>
+                  <Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Full name" required />
+                </label>
+                <label className="space-y-1 text-sm font-medium">
+                  <span>Email</span>
+                  <Input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="Email" required />
+                </label>
+
+                <div className="rounded-xl border bg-background p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Profile photo</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        JPG, PNG, or WebP under 2 MB.
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Button asChild variant="outline" className="w-full sm:w-auto">
+                        <label className="cursor-pointer">
+                          <ImagePlus />
+                          Choose photo
+                          <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                        </label>
+                      </Button>
+                      {imagePreview && (
+                        <Button type="button" variant="ghost" className="w-full text-destructive hover:text-destructive sm:w-auto" onClick={clearSelectedImage}>
+                          <Trash2 />
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  {imagePreview && (
+                    <div className="mt-4 flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+                      <Avatar>
+                        <AvatarImage src={imagePreview} alt="Selected profile preview" />
+                        <AvatarFallback>{getInitials(form.name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{imageFile?.name}</p>
+                        <p className="text-xs text-muted-foreground">Ready to upload</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                  <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={cancelEdit}>
+                    Cancel
+                  </Button>
+                  <Button className="w-full sm:w-auto" disabled={updateMutation.isPending}>
+                    {updateMutation.isPending ? "Updating..." : "Update Profile"}
+                  </Button>
+                </div>
               </form>
             </CardContent>
           </Card>

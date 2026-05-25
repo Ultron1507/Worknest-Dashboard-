@@ -16,24 +16,14 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { createElement } from "react";
+import { createElement, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "../../components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Skeleton } from "../../components/ui/skeleton";
 import { Button } from "../../components/ui/button";
-import { getProjects, queryKeys } from "../../lib/api/queries";
+import { getProjects, getTasks, queryKeys } from "../../lib/api/queries";
 import { useAuthUser } from "../../hooks/use-auth-user";
-
-const weeklyActivity = [
-  { day: "Mon", tasks: 6 },
-  { day: "Tue", tasks: 9 },
-  { day: "Wed", tasks: 7 },
-  { day: "Thu", tasks: 12 },
-  { day: "Fri", tasks: 10 },
-  { day: "Sat", tasks: 5 },
-  { day: "Sun", tasks: 8 },
-];
 
 const statusColors = ["#22c55e", "#6366f1", "#f59e0b"];
 
@@ -43,6 +33,30 @@ function formatToday() {
     month: "short",
     day: "numeric",
   }).format(new Date());
+}
+
+function buildWeeklyActivity(tasks) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - (6 - index));
+    const nextDate = new Date(date);
+    nextDate.setDate(date.getDate() + 1);
+
+    return {
+      day: new Intl.DateTimeFormat("en", { weekday: "short" }).format(date),
+      tasks: tasks.filter((task) => {
+        if (task.status !== "done") {
+          return false;
+        }
+
+        const completedAt = new Date(task.updatedAt || task.createdAt);
+        return completedAt >= date && completedAt < nextDate;
+      }).length,
+    };
+  });
 }
 
 function StatCard({ title, value, change, icon: Icon, tone, loading }) {
@@ -117,32 +131,51 @@ export default function Dashboard() {
   const {
     data: projects = [],
     isLoading: projectsLoading,
-    isError,
-    refetch,
+    isError: projectsError,
+    refetch: refetchProjects,
   } = useQuery({
     queryKey: queryKeys.projects,
     queryFn: getProjects,
   });
+  const {
+    data: tasks = [],
+    isLoading: tasksLoading,
+    isError: tasksError,
+    refetch: refetchTasks,
+  } = useQuery({
+    queryKey: queryKeys.tasks,
+    queryFn: getTasks,
+  });
 
-  const isLoading = userLoading || projectsLoading;
+  const isLoading = userLoading || projectsLoading || tasksLoading;
   const totalProjects = projects.length;
-  const totalTasks = Math.max(152, totalProjects * 7);
-  const completedTasks = Math.round(totalTasks * 0.64);
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter((task) => task.status === "done").length;
+  const inProgressTasks = tasks.filter((task) => task.status === "in-progress").length;
+  const pendingTasks = tasks.filter((task) => task.status === "todo").length;
   const progress = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const weeklyActivity = useMemo(() => buildWeeklyActivity(tasks), [tasks]);
   const statusData = [
-    { name: "Completed", value: totalProjects ? Math.max(1, Math.round(totalProjects * 0.4)) : 0 },
-    { name: "In progress", value: totalProjects ? Math.max(1, Math.round(totalProjects * 0.35)) : 0 },
-    { name: "Pending", value: totalProjects ? Math.max(1, totalProjects - Math.round(totalProjects * 0.75)) : 0 },
+    { name: "Completed", value: completedTasks },
+    { name: "In progress", value: inProgressTasks },
+    { name: "Pending", value: pendingTasks },
   ];
 
-  if (isError) {
+  if (projectsError || tasksError) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center gap-3 p-10 text-center">
           <Activity className="size-8 text-destructive" />
           <h1 className="text-xl font-semibold">Dashboard data is unavailable</h1>
           <p className="text-sm text-muted-foreground">Check the API server and try again.</p>
-          <Button onClick={() => refetch()}>Retry</Button>
+          <Button
+            onClick={() => {
+              refetchProjects();
+              refetchTasks();
+            }}
+          >
+            Retry
+          </Button>
         </CardContent>
       </Card>
     );
@@ -172,9 +205,9 @@ export default function Dashboard() {
         <>
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <StatCard title="Total Projects" value={totalProjects || 0} change="+12% this month" icon={FolderKanban} tone="bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300" />
-            <StatCard title="Total Tasks" value={totalTasks} change="+8% this month" icon={ListChecks} tone="bg-sky-50 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300" />
-            <StatCard title="Completed" value={completedTasks} change="+18% this month" icon={CheckCircle2} tone="bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300" />
-            <StatCard title="Progress" value={`${progress}%`} change="+5% this month" icon={Activity} tone="bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300" />
+            <StatCard title="Total Tasks" value={totalTasks} change={`${pendingTasks} pending`} icon={ListChecks} tone="bg-sky-50 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300" />
+            <StatCard title="Completed" value={completedTasks} change={`${inProgressTasks} in progress`} icon={CheckCircle2} tone="bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300" />
+            <StatCard title="Progress" value={`${progress}%`} change={`${completedTasks} of ${totalTasks} done`} icon={Activity} tone="bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300" />
           </section>
 
           {totalProjects === 0 && <EmptyState />}
@@ -210,8 +243,8 @@ export default function Dashboard() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Projects Status</CardTitle>
-                <CardDescription>Portfolio split by delivery state</CardDescription>
+                <CardTitle>Tasks Status</CardTitle>
+                <CardDescription>Task split by workflow state</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6 sm:grid-cols-[220px_1fr] xl:grid-cols-1 2xl:grid-cols-[220px_1fr]">
@@ -227,8 +260,8 @@ export default function Dashboard() {
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <p className="text-3xl font-semibold">{totalProjects}</p>
-                      <p className="text-xs text-muted-foreground">Projects</p>
+                      <p className="text-3xl font-semibold">{totalTasks}</p>
+                      <p className="text-xs text-muted-foreground">Tasks</p>
                     </div>
                   </div>
                   <div className="space-y-4 self-center">

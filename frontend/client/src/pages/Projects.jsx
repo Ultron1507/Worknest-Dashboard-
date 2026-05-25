@@ -53,6 +53,14 @@ export default function Projects() {
     setShowModal(true);
   };
 
+  const handleDelete = (project) => {
+    const confirmed = window.confirm(`Are you sure you want to delete "${project.name}"?`);
+
+    if (confirmed) {
+      removeProject.mutate(project._id);
+    }
+  };
+
   const closeModal = () => {
     setShowModal(false);
     setEditingId(null);
@@ -125,7 +133,7 @@ export default function Projects() {
                     size="sm"
                     className="text-destructive hover:text-destructive"
                     disabled={removeProject.isPending}
-                    onClick={() => removeProject.mutate(project._id)}
+                    onClick={() => handleDelete(project)}
                   >
                     <Trash2 />
                     Delete

@@ -7,6 +7,7 @@ import { Card, CardContent } from "../components/ui/card";
 import { Input, Textarea } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { Skeleton } from "../components/ui/skeleton";
+import { cn } from "../lib/utils";
 import {
   createTask,
   deleteTask,
@@ -53,6 +54,9 @@ export default function Tasks() {
   const [form, setForm] = useState(defaultForm);
   const [editingId, setEditingId] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [draggingId, setDraggingId] = useState(null);
+  const [dropTarget, setDropTarget] = useState("");
+  const [statusUpdates, setStatusUpdates] = useState([]);
   const queryClient = useQueryClient();
 
   const { data: tasks = [], isLoading, isError, refetch } = useQuery({
@@ -101,6 +105,39 @@ export default function Tasks() {
     onError: () => toast.error("Delete failed"),
   });
 
+  const updateTaskStatus = useMutation({
+    mutationFn: ({ task, status }) =>
+      updateTask({
+        id: task._id,
+        payload: {
+          title: task.title,
+          description: task.description || "",
+          status,
+          priority: task.priority,
+          dueDate: task.dueDate || undefined,
+          projectId: task.projectId?._id || task.projectId || undefined,
+        },
+      }),
+    onSuccess: (updatedTask) => {
+      toast.success("Status updated");
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
+      setStatusUpdates((updates) => [
+        {
+          id: `${updatedTask._id}-${Date.now()}`,
+          title: updatedTask.title,
+          status: columns.find((column) => column.key === updatedTask.status)?.label || updatedTask.status,
+          time: new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(new Date()),
+        },
+        ...updates,
+      ].slice(0, 4));
+    },
+    onError: () => toast.error("Status update failed"),
+    onSettled: () => {
+      setDraggingId(null);
+      setDropTarget("");
+    },
+  });
+
   const handleEdit = (task) => {
     setForm({
       title: task.title,
@@ -112,6 +149,26 @@ export default function Tasks() {
     });
     setEditingId(task._id);
     setShowModal(true);
+  };
+
+  const handleDelete = (task) => {
+    const confirmed = window.confirm(`Are you sure you want to delete "${task.title}"?`);
+
+    if (confirmed) {
+      removeTask.mutate(task._id);
+    }
+  };
+
+  const handleDrop = (status) => {
+    const task = tasks.find((item) => item._id === draggingId);
+
+    if (!task || task.status === status || updateTaskStatus.isPending) {
+      setDraggingId(null);
+      setDropTarget("");
+      return;
+    }
+
+    updateTaskStatus.mutate({ task, status });
   };
 
   const openCreateModal = (status = "todo") => {
@@ -133,11 +190,31 @@ export default function Tasks() {
           <h1 className="text-3xl font-semibold tracking-tight">Tasks</h1>
           <p className="mt-1 text-sm text-muted-foreground">Plan, prioritize, and move work through a focused board.</p>
         </div>
-        <Button onClick={() => openCreateModal()}>
+        <Button className="w-full sm:w-auto" onClick={() => openCreateModal()}>
           <Plus />
           New Task
         </Button>
       </div>
+
+      {statusUpdates.length > 0 && (
+        <Card>
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="size-4 text-emerald-600" />
+              <h2 className="text-sm font-semibold">Status updated</h2>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {statusUpdates.map((update) => (
+                <Badge key={update.id} className="max-w-full gap-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-300">
+                  <span className="truncate">{update.title}</span>
+                  <span>to {update.status}</span>
+                  <span className="text-muted-foreground">{update.time}</span>
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {isError && (
         <Card>
@@ -150,7 +227,7 @@ export default function Tasks() {
       )}
 
       {isLoading ? (
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
             <Skeleton key={index} className="h-44 rounded-xl" />
           ))}
@@ -167,13 +244,23 @@ export default function Tasks() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 xl:grid-cols-3">
           {columns.map((column) => {
             const Icon = column.icon;
             const columnTasks = groupedTasks[column.key] || [];
 
             return (
-              <section key={column.key} className="space-y-3">
+              <section
+                key={column.key}
+                className={cn(
+                  "space-y-3 rounded-xl border border-transparent p-1 transition-colors",
+                  dropTarget === column.key && "border-primary/50 bg-primary/5",
+                )}
+                onDragOver={(event) => event.preventDefault()}
+                onDragEnter={() => setDropTarget(column.key)}
+                onDragLeave={() => setDropTarget("")}
+                onDrop={() => handleDrop(column.key)}
+              >
                 <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-3">
                   <div className="flex items-center gap-2">
                     <Icon className="size-4 text-primary" />
@@ -185,9 +272,25 @@ export default function Tasks() {
                   </Button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="min-h-28 space-y-3">
                   {columnTasks.map((task) => (
-                    <Card key={task._id} className="transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
+                    <Card
+                      key={task._id}
+                      draggable={!updateTaskStatus.isPending}
+                      onDragStart={(event) => {
+                        event.dataTransfer.effectAllowed = "move";
+                        event.dataTransfer.setData("text/plain", task._id);
+                        setDraggingId(task._id);
+                      }}
+                      onDragEnd={() => {
+                        setDraggingId(null);
+                        setDropTarget("");
+                      }}
+                      className={cn(
+                        "cursor-grab transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:cursor-grabbing",
+                        draggingId === task._id && "opacity-50",
+                      )}
+                    >
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
@@ -211,17 +314,35 @@ export default function Tasks() {
                           )}
                         </div>
 
-                        <div className="mt-4 flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleEdit(task)}>
+                        <div className="mt-4 xl:hidden">
+                          <label className="text-xs font-medium text-muted-foreground">
+                            Status
+                            <select
+                              className="mt-1 flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+                              value={task.status}
+                              disabled={updateTaskStatus.isPending}
+                              onChange={(event) => updateTaskStatus.mutate({ task, status: event.target.value })}
+                            >
+                              {columns.map((item) => (
+                                <option key={item.key} value={item.key}>
+                                  {item.label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+
+                        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                          <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => handleEdit(task)}>
                             <Edit3 />
                             Edit
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-destructive hover:text-destructive"
+                            className="w-full text-destructive hover:text-destructive sm:w-auto"
                             disabled={removeTask.isPending}
-                            onClick={() => removeTask.mutate(task._id)}
+                            onClick={() => handleDelete(task)}
                           >
                             <Trash2 />
                             Delete
