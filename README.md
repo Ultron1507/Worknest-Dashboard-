@@ -1,20 +1,45 @@
 <div align="center">
-  <h1>WorkNest Dashboard</h1>
-  <p><strong>A Modern Full-Stack Project & Task Management Application</strong></p>
 
-  <img src="https://img.shields.io/badge/MERN-Stack-00C853?style=for-the-badge&logo=mern" alt="MERN" />
-  <img src="https://img.shields.io/badge/Tailwind-CSS-06B6D4?style=for-the-badge&logo=tailwindcss" alt="Tailwind" />
-  <img src="https://img.shields.io/badge/React_Query-FF4154?style=for-the-badge" alt="TanStack Query" />
-  <img src="https://img.shields.io/badge/Shadcn%2FUI-000000?style=for-the-badge" alt="Shadcn/UI" />
+# WorkNest Dashboard
 
-  <br><br>
+### A Modern Full-Stack Project & Task Management Application
 
-  **WorkNest** is a beautiful, responsive, and feature-rich project management dashboard that helps teams and individuals organize projects, track tasks, and monitor progress with insightful analytics.
+![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-20-339933?style=for-the-badge&logo=node.js&logoColor=white)
+![Express](https://img.shields.io/badge/Express-black?style=for-the-badge&logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
+
+**WorkNest** is a beautiful, responsive, and feature-rich project management dashboard that helps teams and individuals organize projects, track tasks, and monitor progress with insightful analytics.
+
+🔗 **[Live Demo](#)** &nbsp;·&nbsp; *(update this link once deployed)*
+
 </div>
 
 ---
 
-### ✨ Key Features
+## 📋 Table of Contents
+
+- [Key Features](#-key-features)
+- [Tech Stack](#-tech-stack)
+- [Screenshots](#-screenshots)
+- [Project Structure](#-project-structure)
+- [Quick Start](#-quick-start)
+- [Available Scripts](#-available-scripts)
+- [Testing](#-testing)
+- [API Overview](#-api-overview)
+- [Deployment](#-deployment)
+- [Security Notes](#-security-notes)
+- [Production Environment Variables](#-production-environment-variables)
+- [Before Going Live](#-before-going-live)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Author](#-author)
+
+---
+
+## ✨ Key Features
 
 - **Secure Authentication** — Register, login, and protected routes using JWT + bcrypt
 - **Project Management** — Full CRUD operations for projects
@@ -28,9 +53,9 @@
 
 ---
 
-### 🛠️ Tech Stack
+## 🧰 Tech Stack
 
-**Frontend:**
+**Frontend**
 - React 18 + Vite
 - Tailwind CSS + Shadcn/UI
 - TanStack Query (React Query)
@@ -38,34 +63,28 @@
 - Zustand
 - Lucide Icons
 
-**Backend:**
+**Backend**
 - Node.js + Express
 - MongoDB + Mongoose
 - JWT Authentication
 - Multer (file uploads)
 
-**Database:** MongoDB (Atlas or local)
+**Database**
+- MongoDB (Atlas or local)
 
 ---
 
-### 🚀 Live Demo
+## 📸 Screenshots
 
-> *Add your deployed demo link here*
-
----
-
-### 📸 Screenshots
-
-<!-- Add screenshots here after deployment -->
-<!-- 
-![Dashboard](screenshot-dashboard.png)
-![Projects](screenshot-projects.png)
-![Analytics](screenshot-analytics.png)
--->
+> Add screenshots here once available, for example:
+>
+> ![Dashboard](./screenshots/dashboard.png)
+> ![Projects](./screenshots/projects.png)
+> ![Analytics](./screenshots/analytics.png)
 
 ---
 
-### 📂 Project Structure
+## 📂 Project Structure
 
 ```text
 worknest-dashboard/
@@ -85,16 +104,26 @@ worknest-dashboard/
 │   │   └── lib/
 │   └── public/
 └── README.md
+```
+
 ---
 
-### ⚡ Quick Start
+## ⚡ Quick Start
 
-#### Prerequisites
+### Prerequisites
+
 - Node.js 20+
 - npm
 - MongoDB connection string (Atlas recommended)
 
-#### 1. Backend Setup
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/<your-username>/worknest-dashboard.git
+cd worknest-dashboard
+```
+
+### 2. Backend Setup
 
 ```bash
 cd backend
@@ -111,16 +140,16 @@ JWT_SECRET=your_super_long_random_secret_key_here
 CLIENT_URL=http://localhost:5173
 ```
 
-Run backend:
+Run the backend:
 
 ```bash
 npm run dev
 ```
 
-Backend runs at: `http://localhost:5000`  
+Backend runs at: `http://localhost:5000`
 Health check: `http://localhost:5000/api/health`
 
-#### 2. Frontend Setup
+### 3. Frontend Setup
 
 ```bash
 cd frontend/client
@@ -133,7 +162,7 @@ Create `frontend/client/.env`:
 VITE_API_URL=http://localhost:5000/api
 ```
 
-Run frontend:
+Run the frontend:
 
 ```bash
 npm run dev
@@ -143,15 +172,15 @@ App available at: `http://localhost:5173`
 
 ---
 
-### 📜 Available Scripts
+## 📜 Available Scripts
 
-**Backend:**
+**Backend**
 ```bash
 npm run dev      # Development with nodemon
 npm start        # Production
 ```
 
-**Frontend:**
+**Frontend**
 ```bash
 npm run dev      # Start development server
 npm run build    # Build for production
@@ -161,15 +190,46 @@ npm run lint     # Run ESLint
 
 ---
 
-### 🚀 Deployment
+## 🧪 Testing
 
-#### Backend (Render, Railway, Fly.io, etc.)
+No automated test suite is included yet. Contributions adding unit/integration coverage (e.g. Jest or Vitest for the frontend, Jest + Supertest for the backend) are very welcome — see [Contributing](#-contributing).
+
+---
+
+## 🔌 API Overview
+
+A high-level look at the main endpoints. Update this table to match your actual route names if they differ.
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|--------------|----------------|
+| POST | `/api/auth/register` | Register a new user | No |
+| POST | `/api/auth/login` | Log in and receive a JWT | No |
+| GET | `/api/auth/me` | Get the current user's profile | Yes |
+| GET | `/api/projects` | List all projects for the user | Yes |
+| POST | `/api/projects` | Create a new project | Yes |
+| PUT | `/api/projects/:id` | Update a project | Yes |
+| DELETE | `/api/projects/:id` | Delete a project | Yes |
+| GET | `/api/tasks` | List tasks (filterable by project/status) | Yes |
+| POST | `/api/tasks` | Create a new task | Yes |
+| PUT | `/api/tasks/:id` | Update a task | Yes |
+| DELETE | `/api/tasks/:id` | Delete a task | Yes |
+| GET | `/api/users` | List all users (Admin only) | Yes (Admin) |
+| PUT | `/api/users/:id/role` | Update a user's role (Admin only) | Yes (Admin) |
+| GET | `/api/health` | Health check endpoint | No |
+
+---
+
+## 🚀 Deployment
+
+### Backend (Render, Railway, Fly.io, etc.)
+
 1. Push the `backend` folder.
 2. Set all environment variables (especially `MONGO_URI`, `JWT_SECRET`, `CLIENT_URL`).
 3. Install command: `npm install`
 4. Build/Start command: `npm start`
 
-#### Frontend (Vercel, Netlify)
+### Frontend (Vercel, Netlify)
+
 1. Deploy the `frontend/client` folder.
 2. Set `VITE_API_URL` to your deployed backend URL.
 3. Build command: `npm run build`
@@ -177,20 +237,20 @@ npm run lint     # Run ESLint
 
 ---
 
-### 🔐 Security Notes
+## 🔐 Security Notes
 
 - Passwords are securely hashed with **bcrypt**
 - JWT tokens expire in **24 hours**
-- Admin routes require both authentication and `admin` role
+- Admin routes require both authentication and the `admin` role
 - Sensitive routes are protected by middleware
-- Development-only routes (e.g., password reset) are disabled in production
+- Development-only routes (e.g. password reset) are disabled in production
 - Always use a strong, unique `JWT_SECRET` in production
 
 ---
 
-### 🛠️ Production Environment Variables
+## 🔧 Production Environment Variables
 
-**Backend:**
+**Backend**
 ```env
 NODE_ENV=production
 PORT=5000
@@ -199,31 +259,47 @@ JWT_SECRET=your_very_strong_production_secret
 CLIENT_URL=https://your-frontend-domain.com
 ```
 
-**Frontend:**
+**Frontend**
 ```env
 VITE_API_URL=https://your-backend-domain.com/api
 ```
 
 ---
 
-### ✅ Before Going Live
+## ✅ Before Going Live
 
-- Replace `JWT_SECRET` with a strong random value
-- Update `CLIENT_URL` with your production frontend domain
-- Whitelist your backend IP in MongoDB Atlas
-- Test the `/api/health` endpoint
-- Run `npm run build` and `npm run lint` on frontend
+- [ ] Replace `JWT_SECRET` with a strong random value
+- [ ] Update `CLIENT_URL` with your production frontend domain
+- [ ] Whitelist your backend IP in MongoDB Atlas
+- [ ] Test the `/api/health` endpoint
+- [ ] Run `npm run build` and `npm run lint` on the frontend
+- [ ] Add real screenshots and a live demo link above
 
 ---
 
-### 🤝 Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Feel free to open issues or submit pull requests.
 
 1. Fork the project
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+3. Run `npm run lint` and make sure it passes
+4. Commit your changes (`git commit -m 'Add amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
 
 ---
+
+## 📄 License
+
+This project is licensed under the MIT License — see the [LICENSE](./LICENSE) file for details.
+
+---
+
+## 👤 Author
+
+**Your Name**
+
+- GitHub: [@your-username](https://github.com/your-username)
+- LinkedIn: [Your Name](https://linkedin.com/in/your-username)
+- Portfolio: [yourwebsite.com](https://yourwebsite.com)
