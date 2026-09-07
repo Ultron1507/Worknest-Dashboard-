@@ -13,7 +13,7 @@
 
 **WorkNest** is a beautiful, responsive, and feature-rich project management dashboard that helps teams and individuals organize projects, track tasks, and monitor progress with insightful analytics.
 
-🔗 **[Live Demo](#)** &nbsp;·&nbsp; *(update this link once deployed)*
+🔗 **[Live Demo](#)** &nbsp;·&nbsp; *(https://worknest-dashboard.vercel.app/)*
 
 </div>
 
